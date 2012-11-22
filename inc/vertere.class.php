@@ -5,17 +5,31 @@ include_once 'conversions.class.php';
 
 class Vertere {
 
-	private $spec, $spec_uri, $resources, $base_uri, $lookups = array();
+	private $spec, $spec_uri, $resources, $base_uri, $lookups = array(), $null_values = array();
 
 	public function __construct($spec, $spec_uri) {
 		$this->spec = $spec;
 		$this->spec_uri = $spec_uri;
 		
-		//Find resource specs
+		// Find resource specs
 		$this->resources = $spec->get_resource_triple_values($this->spec_uri, NS_CONV.'resource');
 		if (empty($this->resources)) { throw new Exception('Unable to find any resource specs to work from'); }
 		
 		$this->base_uri = $spec->get_first_literal($this->spec_uri, NS_CONV.'base_uri');
+		
+    // :null_values is a list of strings that indicate NULL in the source data
+		$null_value_list = $spec->get_first_resource($this->spec_uri, NS_CONV.'null_values');
+		if ($null_value_list) {
+		  foreach($spec->get_list_values($null_value_list) as $null_value_resource) {
+		    if ($null_value_resource["type"] == "literal") {
+    	    array_push($this->null_values, $null_value_resource["value"]);
+		    }
+		  }
+	  } else {
+	    array_push($this->null_values, "");
+	  }
+	  foreach($this->null_values as $value) {
+	  }
 	}
 	
 	public function convert_array_to_graph($record) {
@@ -173,7 +187,8 @@ class Vertere {
 			foreach ($source_columns as $source_column) {
 				$source_column = $source_column['value'];
 				$source_column--;
-				if (!empty($record[$source_column])) {
+        // if (!empty($record[$source_column])) {  // empty() is not a good idea: empty(0) == TRUE
+				if (!in_array($record[$source_column], $this->null_values)) {
 					$source_values[] = $record[$source_column];
 				}
 			}
