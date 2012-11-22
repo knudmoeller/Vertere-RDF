@@ -15,11 +15,15 @@ include_once 'inc/diagnostics.php';
 define('NS_CONV', 'http://example.com/schema/data_conversion#');
 define('NS_RDF', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
 
+if (count($argv) != 3) { throw new Exception('you must specify an input spec file and an output .ttl file'); }
+
 //Load spec and create new Vertere converter
 $spec_file_name = $argv[1];
 $spec_file = file_get_contents($spec_file_name);
 $spec = new SimpleGraph();
 $spec->from_turtle($spec_file);
+
+$output_file_name = $argv[2];
 
 //Find the spec in the graph
 $specs = $spec->get_subjects_of_type(NS_CONV.'Spec');
@@ -41,6 +45,6 @@ for ($i = 0; $i < $header_rows; $i++) { $reader->next_record(); }
 while ($record = $reader->next_record()) {
 	$output_graph = $vertere->convert_array_to_graph($record);
 	if (!$output_graph->is_empty()) {
-		echo $output_graph->to_ntriples();
+		file_put_contents($output_file_name, $output_graph->to_ntriples(), FILE_APPEND);
 	}
 }
