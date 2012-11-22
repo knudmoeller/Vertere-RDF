@@ -90,7 +90,7 @@ class Vertere {
 				$source_column = $source_column['value'];
 				$source_column--;
 				$value = $record[$source_column];
-				if (preg_match($filter, $value) != 0) {
+				if (preg_match($filter, $value) != 0 && !in_array($value, $this->null_values)) {
 					$source_values[] = $value;
 				}
 			}
