@@ -1,55 +1,421 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-	"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
-<head>
-	<title>Vertere CSV2RDF Mapping Language</title>
-	<link rel="stylesheet" href="vertere_style.css"/>	
-</head>
+  <head>
+    <title>Vertere CSV2RDF Mapping Language</title>
+    <link rel="stylesheet" href="vertere_style.css"/>
+  </head>
+  <body>
+    <h1>Vertere CSV2RDF Mapping Language</h1>
+    <p>
+      Vertere is a tool for converting data in CSV format into RDF.
+      The Vertere mapping language described in this document uses
+      Turtle syntax, and is designed so as to resemble to target RDF
+      graph as much as possible. Another design choice is to ensure that
+      each line in the source CSV file can be processed individually,
+      ensuring that the conversion process can be parallelised easily.
+    </p>
+    <p>The Verter mapping language is based on RDF. This means that everything is declared using triples, that consist of a <i>subject</i>, <i>predicate</i> and an <i>object</i>. Each part of a triple is a resource, which is identified by a unique URI. Each URI typically has a namespace (e.g., <code>http://example.com/namespace/</code>), followed by the name of the resource (e.g., <code>Concept</code>).
+      In Turtle, triples are declared using the following notation:
+    </p>
+    <pre>&lt;http://example.com/Subject> &lt;http://example.com/predicate> &lt;http://example.com/Object> .</pre>
+    <p>
+      This document assumes basic knowledge of RDF and the Turtle syntax. For more information, visit the <a href="http://www.w3.org/TeamSubmission/turtle/">W3C team submission on Turtle - Terse RDF Triple Language</a>
+    </p>
+    <h2>Vertere Vocabulary</h2>
 
-<body>
+    <p>
+      All Vertere-specific instructions are defined in the Vertere vocabulary
+      namespace, which is introduced as the base namespace at the top of the
+      conversion document. The namespace is not yet formally defined, so the user is free to fill in any URI they like.
+    </p>
 
-<h1>Vertere CSV2RDF Mapping Language</h1>
+    <pre>@prefix : &lt;http://example.com/schema/data_conversion#> .</pre>
 
-<p>
-	Vertere is a tool for converting data in CSV format into RDF. 
-	The Vertere mapping language described in this document uses 
-	Turtle syntax, and is designed so as to resemble to target RDF
-	graph as much as possible. Another design choice is to ensure that
-	each line in the source CSV file can be processed individually, 
-	ensuring that the conversion process can be parallelised easily.
-</p>
+    <p>
+      Next, the user is able to declare extra prefixes to vocabulary (or ontology) namespaces. This allows using the qualified name later in the spec, instead of having to write the full URI to a resource. For example, if we want to map a CSV file to concepts in the <a href="http://vocab.org/transit/terms/">TRANSIT vocabulary</a>, we can declare the prefix <code>transit</code>. This way, we can use <code>transit:Stop</code> instead of having to write <code>&lt;http://vocab.org/transit/terms/Stop></code>.
+    </p>
+    <pre>@prefix transit: &lt;http://vocab.org/transit/terms/> .</pre>
 
-<p>This document assumes basic knowledge of RDF and the Turtle syntax.</p>
+    <h2>Entry Point</h2>
 
-<h2>Vertere Vocabulary</h2>
+    <p>
+      The entry point to the mapping specification is a <code>:Spec</code> object
+      (here identified as the document itself), which gives basic information about the data source. Such an object can be declared by stating that the root URI of the type <code>:Spec</code> is.
+    </p>
+    <pre>&lt;#> a :Spec .</pre>
 
-<p>
-	All Vertere-specific instructions are defined in the Vertere vocabulary
-	namespace, which is introduced as the base namespace at the top of the 
-	conversion document:
-</p>
+    The spec resource expects the following metadata about the data source:
+    <ul>
+      <li>
+        <b>Format</b><br>Supplies the format of the datafile that needs to be mapped. possible values (for now) are <code>:CSV</code> or <code>:TSV</code>, depending on whether your mapping a file using commas or tabs to separate the values.
+          <pre>&lt;#> :format :CSV .</pre>
+      </li>
+      <li>
+        <b>Header rows</b><br>Supplies a binary value that indicates if the file contains a header row (<code>1</code>) or not (<code>0</code>).
+          <pre>&lt;#> :header_rows 0 .</pre>
+      </li>
+      <li>
+        <b>Expected header</b><br>When <code>:header_rows</code> is set to 1, you can supply the header row you expect in the document.
+          <pre>&lt;#> :expected_header ( "\"id\",\"code\",\"local_code\",\"name\",\"continent\" ).</pre>
+      </li>
+      <li>
+        <b>Resource</b><br>With resource, you declare the resources that the mapping process will output. The resources that are Each mapping for each resource that is defined here,
+          <pre>&lt;#> :resource <#customer>, <#email>, <#phone>, <#affiliation>, <#sales_person> .</pre>
+      </li>
+      <li>
+        <b>Base URI</b><br>The base URI define the namespace where the created resources will be based under.
+          <pre>&lt;#> :base_uri "&lt;http://my.data.source/test>" ;</pre>
+      </li>
+    </ul>
 
-<pre>
+    <p>
+      Turtle allows a shorter notation when several triples share the same subject. Declaring all above triples can be written like such:
+    </p>
+
+    <pre>
+<#> a :Spec;
+  :format :CSV;
+  :header_rows 1;
+  :expected_header ( "\"id\",\"code\",\"local_code\",\"name\",\"continent\",\"iso_country\",\"wikipedia_link\",\"keywords\"" );
+  :resource <#continent>, <#country>, <#region>, <#ourairports_region_page>, <#wikipedia_page>, <#dbpedia_resource>;
+  :base_uri "http://data.kasabi.com/dataset/world_geography/".
+    </pre>
+
+    <h1>Declaring mappings</h1>
+    <h2>Declaring and identifying resources</h2>
+    <p>
+      RDF uses unique URIs to identify resources. This means that these URIs need to be created from the dataset. This is done by declaring the resources and adding <code>:identify</code> property.
+    </p><p>
+      Declaring a resource works the same way as creating the <code>:Spec</code> object. This time, we choose a variable name, for example <i>Continent</i>, and say it is a <code>:Resource</code>.
+    </p>
+    <pre>
+<#continent> a :Resource .</pre>
+    <p>
+      Next, we specify how the identifying URI should be created. The value of <code>:identify</code> is a <i>blank node</i>, which is a resource that does not really exists (and has no URI), and is added in Turtle between <code>[]</code>. Between these brackets, you can add predicates and objects as you would with any other resource. We use two predicates with our blank node:
+
+    </p>
+    <ul>
+      <li><b>Source column</b><br />
+        With source column, we define from which column, the values will be used to create the unique URI. This is typically a column with IDs (or primary keys), where the values are surely unique. For this, the predicate <code>:source_column</code> is used, the value is an <i>integer</i>, representing the column index (starting from 1).
+      </li>
+      <li><b>Base URI</b><br />
+        Sometimes we want to use collections in our URIs. You can specify a different base URI using <code>:base_uri</code>, the value is a <i>string</i>.
+      </li>
+    </ul>
+    <p>This example will, for example, create the uri <i>http://data.kasabi.com/dataset/world-geography/continents/Europe</i> if a value in the fifth column would be "Europe".</p>
+    <pre>
+<#continent> a :Resource;
+  :identity [
+    :source_column 5;
+    :base_uri "http://data.kasabi.com/dataset/world-geography/continents/"
+  ] .
+    </pre>
+    <p>
+      In some case, columns will need to be combined in order to obtain a unique value (e.g., firstname and lastname). With the predicate <code>:source_columns</code> you can refer to the indexes of the columns you want to combine. The value are two or more integers between brackets, separated by a space. By adding <code>:source_columns_glue</code>, you can define a string that will be used to glue the pieces together (e.g., underscore). A slash <code>/</code> is used to create a deeper hierarchy in the URI.
+    </p>
+    <pre>
+<#ourairports_region_page> a :Resource;
+  :type bibo:Webpage;
+  :identity [
+	:source_columns ( 6 3 ) ;
+	:source_column_glue "/" ;
+	:base_uri "http://www.ourairports.com/countries/"
+  ].</pre>
+    <h2>Typing resources</h2>
+    <p>Typing is the most basic operation in mapping. In the output RDF, it will create triples using the predicate <code>rdf:type</code> (or in Turtle the shorthand <code>a</code>). The object of this triple, will typically be a class, defined in the ontology that we are mapping to. The created resource, will therefore be an instance of this type. In this mapping language, we type a resource by using the <code>:type</code> predicate, followed by the URI of the concept.</p>
+    <pre><#wikipedia_page> :type bibo:Webpage .</pre>
+    <p>In this example, <code>bibo</code> represents the <a href="http://purl.org/ontology/bibo/">Bibliographic Ontology Specification</a> namespace. Therefore, <code>bibo:Webpage</code> can also be written as <code>&lt;http://purl.org/ontology/bibo/Webpage></code> .</p>
+    <h2>Adding attributes and relations to resources</h2>
+    <p>Besides typing, you might want to add some related data to your resource. In RDF (or typically in <a href="http://linkeddata.org/">Linked Data</a>), this is done in two ways. They both use a blank node as object.</p>
+
+    <p>Firstly, by adding <i>links</i> to other resources, created from your data set or already existing on the Web. In this mapping language defined with the <code>:relationship</code> predicate. The object, a blank node, typically has two predicates:</p>
+    <ul>
+      <li>The <code>:property</code> predicate, which refers to the property in the ontology you want to use.</li>
+      <li>The <code>:object_from</code> predicate, which refers to another resource, declared elsewhere in the document. </li>
+    </ul>
+    <table style="width: 100%">
+      <tr>
+        <td>
+          <pre>
+<#region> :relationship [
+  :property owl:sameAs;
+  :object_from <#dbpedia_resource>
+] .</pre>
+        </td>
+        <td><pre>&lt;http://test.com/REGION11> owl:sameAs &lt;http://dbpedia.org/resource/Aix-en-Provence> .</pre></td>
+      </tr>
+    </table>
+    <p>Secondly, by adding triples with <i>literals</i> as object value. In many cases, the values of a column in your CSV file just need to be added as a string or integer. In this language defined with the <code>:attribute</code> predicate.  The object, a blank node, typically has these predicates:</p>
+    <ul>
+      <li>The <code>:property</code> predicate, which refers to the property in the ontology you want to use to add the literal value.</li>
+      <li>The <code>:source_column</code> predicate, which refers to a column using its index. </li>
+      <li>The <code>:language</code> predicate, which can add a language code to a string value.</li>
+      <li>The <code>:datatype</code> predicate, which adds a XSD datatype to the value</li>
+    </ul>
+    <table style="width: 100%">
+      <tr>
+        <th>
+          Mapping
+        </th>
+        <th>
+          Output example
+        </th>
+      </tr>
+      <tr>
+        <td>
+          <pre>
+<#region> [
+  :property geo:alt;
+  :source_column 7;
+  :datatype xsd:float;
+] .</pre>
+        </td>
+        <td><pre>&lt;http://test.com/REGION11> geo:alt "3.14"^^xsd:float .</pre></td>
+      </tr>
+      <tr>
+        <td>
+          <pre>
+<#region> [
+  :property rdfs:label;
+  :source_column 7;
+  :language "en";
+] .</pre>
+        </td>
+        <td><pre>&lt;http://test.com/REGION11> rdfs:label "Provence"@en .</pre></td>
+      </tr>
+    </table>
+
+    <p>A fully mapped resource typically consists of typing, identity, relations and attributes, as shown in the combined example below:</p>
+
+    <pre>
+<#region> a :Resource;
+  :type places:Region;
+  :identity [
+	:source_column 2;
+	:base_uri "http://data.kasabi.com/dataset/world-geography/regions/"
+  ];
+  :relationship [
+    :property owl:sameAs;
+    :object_from <#dbpedia_resource>
+  ],
+  [
+    :property foaf:isPrimaryTopicOf;
+    :object_from <#wikipedia_page>
+  ],
+  :attribute [
+    :property fly:iso_code;
+    :source_column 2
+  ],
+  [
+    :property foaf:name;
+    :source_column 4
+  ].</pre>
+    
+    <h2>Using regular expressions</h2>
+    <p>With the Vertere mapping language, you can also specify regular expression patterns to transform the values in certain columns.
+    </p>
+    <p>
+      In this example, we transform the Wikipedia URIs, defined in another resource <code><#wikipedia_page></code>, to DBpedia URIs. We can use this <code>&lt;#dbpedia_resource></code> elsewhere as an object. (e.g., to create <i>sameAs</i> links)
+    </p>
+    <pre>
+<#dbpedia_resource> a :Resource; 
+  :identity [
+    :source_resource <#wikipedia_page>;
+    :base_uri "" ;
+    :process ( :regex );
+    :regex_match "http://[^/]*/wiki/(.*)";
+    :regex_output "http://dbpedia.org/resource/${1}";
+  ] .</pre>
+    <h2>Using lookup</h2>
+    <h2>Transforming values with process functions</h2>
+    <h2>Combining techniques</h2>
+    <p>Many of the above techniques can be combined.</p>
+
+    <h1>Example</h1>
+    <p>The following example maps a CSV file with airports using the TRANSIT, PLACES, GEO, GEORSS, NAPTAN, FOAF, FLY, SPACEREL and BIBO volcabulary.</p>
+    <pre>
+"id","ident","type","name","latitude_deg","longitude_deg","elevation_ft","continent","iso_country","iso_region","municipality","scheduled_service","gps_code","iata_code","local_code","home_link","wikipedia_link","keywords"
+6523,"00A","heliport","Total Rf Heliport",40.07080078125,-74.9336013793945,11,"NA","US","US-PA","Bensalem","no","00A",,"00A",,,
+6524,"00AK","small_airport","Lowell Field",59.94919968,-151.695999146,450,"NA","US","US-AK","Anchor Point","no","00AK",,"00AK",,,
+6525,"00AL","small_airport","Epps Airpark",34.8647994995117,-86.7703018188477,820,"NA","US","US-AL","Harvest","no","00AL",,"00AL",,,
+6526,"00AR","heliport","Newport Hospital & Clinic Heliport",35.608699798584,-91.2548980712891,237,"NA","US","US-AR","Newport","no","00AR",,"00AR",,,
+6527,"00AZ","small_airport","Cordes Airport",34.3055992126465,-112.165000915527,3810,"NA","US","US-AZ","Cordes","no","00AZ",,"00AZ",,,
+6528,"00CA","small_airport","Goldstone /Gts/ Airport",35.3504981995,-116.888000488,3038,"NA","US","US-CA","Barstow","no","00CA",,"00CA",,,
+6529,"00CO","small_airport","Cass Field",40.622200012207,-104.34400177002,4830,"NA","US","US-CO","Briggsdale","no","00CO",,"00CO",,,
+6531,"00FA","small_airport","Grass Patch Airport",28.6455001831055,-82.2190017700195,53,"NA","US","US-FL","Bushnell","no","00FA",,"00FA",,,
+6532,"00FD","heliport","Ringhaver Heliport",28.8465995788574,-82.3453979492188,25,"NA","US","US-FL","Riverview","no","00FD",,"00FD",,,
+    </pre>
+    <pre>
 @prefix : &lt;http://example.com/schema/data_conversion#> .
-</pre>
+@prefix bibo: &lt;http://purl.org/ontology/bibo/> .
+@prefix fly: &lt;http://vocab.org/fly/schema/> .
+@prefix foaf: &lt;http://xmlns.com/foaf/0.1/> .
+@prefix geo: &lt;http://www.w3.org/2003/01/geo/wgs84_pos#> .
+@prefix georss: &lt;http://www.georss.org/georss/> .
+@prefix naptan: &lt;http://transport.data.gov.uk/def/naptan/> .
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#> .
+@prefix places: &lt;http://purl.org/ontology/places#> .
+@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#> .
+@prefix spacerel: &lt;http://data.ordnancesurvey.co.uk/ontology/spatialrelations/> .
+@prefix transit: &lt;http://vocab.org/transit/terms/> .
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#> .
 
-<h2>Entry Point</h2>
+# 1    id
+# 2    ident
+# 3    type
+# 4    name
+# 5    latitude_deg
+# 6    longitude_deg
+# 7    elevation_ft
+# 8    continent
+# 9    iso_country
+# 10   iso_region
+# 11   municipality
+# 12   scheduled_service
+# 13   gps_code
+# 14   iata_code
+# 15   local_code
+# 16   home_link
+# 17   wikipedia_link
+# 18   keywords
 
-<p>
-	The entry point to the mapping specification is a <code>:Spec</code> object 
-	(here identified as the document itself), which 
-</p>
+&lt;#> a :Spec;
+:format :CSV;
+:header_rows 1;
+:expected_header ( "\"id\",\"ident\",\"type\",\"name\",\"latitude_deg\",\"longitude_deg\",\"elevation_ft\",\"continent\",\"iso_country\",\"iso_region\",\"municipality\",\"scheduled_service\",\"gps_code\",\"iata_code\",\"local_code\",\"home_link\",\"wikipedia_link\",\"keywords\"" );
+:resource &lt;#airport>, &lt;#airport_type>, &lt;#country>, &lt;#continent>, &lt;#region>, &lt;#municipality>, &lt;#wikipedia_page>, &lt;#dbpedia_resource>, &lt;#ourairports_page>, &lt;#naptan_resource>;
+:base_uri "http://data.kasabi.com/dataset/airports/" .
 
-<pre>
-&lt;#> a :Spec ; 
-	:format :TSV ;
-	:header_rows 0 ;
-	:resource &lt;#customer>, &lt;#email>, &lt;#phone>, &lt;#affiliation>, &lt;#sales_person> ;
-	:base_uri "http://data.kasabi.com/dataset/adventureworks-2008r2lt/" ;
+&lt;#airport> a :Resource
+; :identity [ :source_column 2; ]
+; :type fly:Airport, transit:Stop, naptan:Airport
+; :relationship
+	[ :property rdf:type; :object_from &lt;#airport_type> ],
+	[ :property spacerel:within; :object_from &lt;#municipality> ],
+	[ :property spacerel:within; :object_from &lt;#region> ],
+	[ :property spacerel:within; :object_from &lt;#country> ],
+	[ :property spacerel:within; :object_from &lt;#continent> ],
+	[ :property foaf:isPrimaryTopicOf; :object_from &lt;#wikipedia_page> ],
+	[ :property foaf:isPrimaryTopicOf; :object_from &lt;#ourairports_page> ],
+	[ :property owl:sameAs; :object_from &lt;#dbpedia_resource> ],
+	[ :property owl:sameAs; :object_from &lt;#naptan_resource> ]
+; :attribute
+	[ :property geo:lat; :source_column 5; :datatype xsd:float ],
+	[ :property geo:long; :source_column 6; :datatype xsd:float ],
+	[ :property geo:alt; :source_column 7; :datatype xsd:float; :process ( :feet_to_metres ); ],
+	[ :property georss:point; :source_columns (5 6); :source_column_glue " " ],
+	[ :property foaf:name; :source_column 4; :language "en" ],
+	[ :property fly:icao_code; :source_column 2 ],
+	[ :property fly:scheduled_service; :source_column 12; :lookup &lt;#boolean_lookup> ]
 .
-</pre>
 
-</body>
+&lt;#airport_type> a :Resource
+; :identity [ :source_column 3; :process ( :normalise :title_case ); :base_uri "http://data.kasabi.com/dataset/airports/schema/" ]
+; :type rdfs:Class
+; :attribute
+	[
+		:property rdfs:label;
+		:source_column 3;
+		:process ( :regex :title_case );
+		:regex_match "_";
+		:regex_output " ";
+	]
+.
+
+&lt;#continent> a :Resource
+; :identity [
+	:source_column 8;
+	:base_uri "http://data.kasabi.com/dataset/world-geography/continents/"
+]
+.
+
+&lt;#country> a :Resource
+; :identity [
+	:source_column 9;
+	:base_uri "http://data.kasabi.com/dataset/world-geography/countries/"
+]
+.
+
+&lt;#region> a :Resource
+; :type places:Region
+; :identity [
+	:source_column 10;
+	:base_uri "http://data.kasabi.com/dataset/world-geography/regions/"
+	]
+; :relationship [ :property spacerel:contains; :object_from &lt;#municipality> ]
+.
+
+&lt;#municipality> a :Resource
+; :type places:Municipality
+; :identity [
+	:source_column 11;
+	:container "municipalities";
+	:process ( :flatten_utf8 :normalise );
+	]
+; :relationship [ :property spacerel:within; :object_from &lt;#region> ]
+; :attribute [ :property rdfs:label; :source_column 11 ]
+.
+
+&lt;#wikipedia_page> a :Resource
+; :type bibo:Webpage
+; :identity [
+	:source_column 17;
+	:base_uri "";
+	:process ( :regex );
+	:regex_match " ";
+	:regex_output "";
+	 ]
+.
+
+&lt;#dbpedia_resource> a :Resource
+; :identity [
+	:source_resource &lt;#wikipedia_page>;
+	:process ( :regex );
+	:regex_match "http://[^/]*/wiki/(.*)";
+	:regex_output "http://dbpedia.org/resource/${1}";
+	]
+.
+
+&lt;#ourairports_page> a :Resource
+; :type bibo:Webpage
+; :identity [
+	:source_column 2;
+	:base_uri "";
+	:process ( :regex );
+	:regex_match "^(.*)$";
+	:regex_output "http://www.ourairports.com/airports/${1}/";
+	]
+.
+
+&lt;#naptan_resource> a :Resource; 
+  :identity [
+	:source_column 14;
+	:base_uri "http://transport.data.gov.uk/id/airport/"
+  ].
+
+&lt;#boolean_lookup> a :Lookup; 
+  :lookup_entry [ 
+    :lookup_key "yes"; 
+    :lookup_value "true"^^xsd:boolean 
+  ]; 
+  :lookup_entry [ 
+    :lookup_key "true"; 
+    :lookup_value "true"^^xsd:boolean 
+  ]; 
+  :lookup_entry [ 
+    :lookup_key "no"; 
+    :lookup_value "false"^^xsd:boolean 
+  ]; 
+  :lookup_entry [ 
+    :lookup_key "false"; 
+    :lookup_value "false"^^xsd:boolean 
+  ] .
+
+    </pre>
+
+  </body>
 </html>
