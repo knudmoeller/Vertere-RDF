@@ -333,63 +333,66 @@
 ]
 .
 
-&lt;#country> a :Resource
-; :identity [
-	:source_column 9;
-	:base_uri "http://data.kasabi.com/dataset/world-geography/countries/"
-]
-.
+&lt;#country> a :Resource;
+    :identity [
+        :source_column 9;
+        :base_uri "http://data.kasabi.com/dataset/world-geography/countries/"
+    ] .
 
-&lt;#region> a :Resource
-; :type places:Region
-; :identity [
-	:source_column 10;
-	:base_uri "http://data.kasabi.com/dataset/world-geography/regions/"
-	]
-; :relationship [ :property spacerel:contains; :object_from &lt;#municipality> ]
-.
+&lt;#region> a :Resource;
+    :type places:Region;
+    :identity [
+        :source_column 10;
+        :base_uri "http://data.kasabi.com/dataset/world-geography/regions/"
+	];
+    :relationship [
+        :property spacerel:contains;
+        :object_from &lt;#municipality>
+    ] .
 
-&lt;#municipality> a :Resource
-; :type places:Municipality
-; :identity [
-	:source_column 11;
-	:container "municipalities";
-	:process ( :flatten_utf8 :normalise );
-	]
-; :relationship [ :property spacerel:within; :object_from &lt;#region> ]
-; :attribute [ :property rdfs:label; :source_column 11 ]
-.
+&lt;#municipality> a :Resource;
+    :type places:Municipality;
+    :identity [
+        :source_column 11;
+        :container "municipalities";
+        :process ( :flatten_utf8 :normalise );
+	];
+    :relationship [
+        :property spacerel:within;
+        :object_from &lt;#region>
+    ];
+    :attribute [
+        :property rdfs:label;
+        :source_column 11
+    ] .
 
-&lt;#wikipedia_page> a :Resource
-; :type bibo:Webpage
-; :identity [
-	:source_column 17;
-	:base_uri "";
-	:process ( :regex );
-	:regex_match " ";
-	:regex_output "";
-	 ]
-.
+&lt;#wikipedia_page> a :Resource;
+    :type bibo:Webpage;
+    :identity [
+        :source_column 17;
+        :base_uri "";
+        :process ( :regex );
+        :regex_match " ";
+        :regex_output "";
+	 ] .
 
-&lt;#dbpedia_resource> a :Resource
-; :identity [
-	:source_resource &lt;#wikipedia_page>;
-	:process ( :regex );
-	:regex_match "http://[^/]*/wiki/(.*)";
-	:regex_output "http://dbpedia.org/resource/${1}";
-	]
-.
+&lt;#dbpedia_resource> a :Resource;
+    :identity [
+        :source_resource &lt;#wikipedia_page>;
+        :process ( :regex );
+        :regex_match "http://[^/]*/wiki/(.*)";
+        :regex_output "http://dbpedia.org/resource/${1}";
+	] .
 
-&lt;#ourairports_page> a :Resource
-; :type bibo:Webpage
-; :identity [
-	:source_column 2;
-	:base_uri "";
-	:process ( :regex );
-	:regex_match "^(.*)$";
-	:regex_output "http://www.ourairports.com/airports/${1}/";
-	]
-.
+&lt;#ourairports_page> a :Resource;
+    :type bibo:Webpage;
+    :identity [
+        :source_column 2;
+        :base_uri "";
+        :process ( :regex );
+        :regex_match "^(.*)$";
+        :regex_output "http://www.ourairports.com/airports/${1}/";
+	] .
 
 &lt;#naptan_resource> a :Resource; 
   :identity [
