@@ -124,6 +124,45 @@
 	:source_column_glue "/" ;
 	:base_uri "http://www.ourairports.com/countries/"
   ].</pre>
+    <h3>Using URI templates</h3>
+    <p>
+      Besides simple concatenation, the URI might be constructed in more complex manner. For that reason, are URI templates supported. URI templates provide a flexible way to specify a URI using variables, and asign values afterwards. The spec can be found <a href="http://tools.ietf.org/html/rfc6570">here</a>.
+    </p>
+    <p>
+      A URI template is added to value of <code>:identify</code>, by using the following predicates:
+    </p>
+    <ul>
+      <li><b>Template</b><br />
+        You can specify a template using <code>:template</code>, the value is a <i>string</i>.
+      </li>
+      <li><b>Template variables</b><br />
+        The variables that need to fill the variables used in the template, are added using <code>:template_vars</code>. The value is a list of blank nodes, each specifying a variable name and a source column:
+        <ul>
+          <li><b>Variable name</b><br />
+        This value represents the name of the variable used in the template. For this, the predicate <code>:variable</code> is used.
+      </li>
+           <li><b>Source column</b><br />
+        With source column, we define from which column, the values will be used to create the unique URI. This is typically a column with IDs (or primary keys), where the values are surely unique. For this, the predicate <code>:source_column</code> is used, the value is an <i>integer</i>, representing the column index (starting from 1).
+      </li>
+        </ul>
+      </li>
+      
+      
+    </ul>
+    <p>The above example can also be written as:</p>
+    <pre>
+<#ourairports_region_page> a :Resource;
+  :type bibo:Webpage;
+  :identity [
+    :template "http://www.ourairports.com/countries/{country_id}/{local_id}";
+    :template_vars [
+      :variable "country_id";
+      :source_column 6
+    ],[
+      :variable "local_id";
+      :source_column 3
+    ]
+  ].</pre>
     <h2>Typing resources</h2>
     <p>Typing is the most basic operation in mapping. In the output RDF, it will create triples using the predicate <code>rdf:type</code> (or in Turtle the shorthand <code>a</code>). The object of this triple, will typically be a class, defined in the ontology that we are mapping to. The created resource, will therefore be an instance of this type. In this mapping language, we type a resource by using the <code>:type</code> predicate, followed by the URI of the concept.</p>
     <pre><#wikipedia_page> :type bibo:Webpage .</pre>
@@ -214,7 +253,42 @@
     :source_column 4
   ].</pre>
     
-    <h2>Using regular expressions</h2>
+    <h2>Processing column values</h2>
+    Column values can be processed before using them. This is done by calling a process function, which is specified by adding the predicate <code>:process</code>. Its object is an ordered list of defined functions which will be executed sequentially. We discuss some of them in detail.
+    <h3>Using conversions</h3>
+    Conversions transform a value into another value and are specified as custom PHP functions. These function are specified in the class <code>Conversions</code> located at <i>custom/conversions.class.php</i>. 
+    <pre>
+&lt;?php
+/*
+ * Class for custom conversion methods
+ */
+class Conversions {
+    /*
+     * Converts a value from feet to metres
+     */
+	public static function feet_to_metres($value) {
+		return ($value * 0.3048);
+	}
+
+	public static function metres_to_feet($value) {
+		return ($value * 3.2808);
+	}
+
+}
+?&gt;
+    </pre>
+    <p>This class can be extended with extra functions. In the mapping file, a function is called by adding <code>:functionname</code> to the object list. In the following example, we add the altitude of a region. The values in the data columns are in feet, so we use a process function to convert them.</p>
+    <pre>
+<#region> a :Resource;
+
+:attribute [
+  :property geo:alt;
+  :source_column 7;
+  :datatype xsd:float;
+  :process (:feet_to_metres)
+] .
+    </pre>
+    <h3>Using regular expressions</h3>
     <p>With the Vertere mapping language, you can also specify regular expression patterns to transform the values in certain columns.
     </p>
     <p>
