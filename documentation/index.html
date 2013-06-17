@@ -226,7 +226,16 @@
         <td><pre>&lt;http://test.com/REGION11> rdfs:label "Provence"@en .</pre></td>
       </tr>
     </table>
-
+    <p>Attributes and relationships can also be used to add constant literals or URIs that are hard coded in the mapping file (e.g., adding unit information for values). The ptedicates <pre>:value</pre> (attributes) and <pre>:object</pre> (relationships) are used for this.</p>
+    <p>An example with attributes:</p>
+    <pre><#region> :attribute [ :property ex:prop; :value "something"]</pre>
+    <p>An example with relationships:</p>
+    <pre><#region> :relationship [ :property ex:prop; :object <http://example.com/resource>]</pre>
+    <p>
+You can also use the current subject as object, in order to create inverse relations:</p>
+<pre>
+:relationship [ :property ex:parent; :subject <http://example.com/resource> ] 
+</pre>
     <p>A fully mapped resource typically consists of typing, identity, relations and attributes, as shown in the combined example below:</p>
 
     <pre>
