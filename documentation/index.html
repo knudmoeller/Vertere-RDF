@@ -47,26 +47,26 @@
     </p>
     <pre>&lt;#> a :Spec .</pre>
 
-    The spec resource expects the following metadata about the data source:
+    <p>The spec resource expects the following metadata about the data source:</p>
     <ul>
       <li>
-        <b>Format</b><br>Supplies the format of the datafile that needs to be mapped. possible values (for now) are <code>:CSV</code> or <code>:TSV</code>, depending on whether your mapping a file using commas or tabs to separate the values.
+        <b>Format</b><br />Supplies the format of the datafile that needs to be mapped. possible values (for now) are <code>:CSV</code> or <code>:TSV</code>, depending on whether your mapping a file using commas or tabs to separate the values.
           <pre>&lt;#> :format :CSV .</pre>
       </li>
       <li>
-        <b>Header rows</b><br>Supplies a binary value that indicates if the file contains a header row (<code>1</code>) or not (<code>0</code>).
+        <b>Header rows</b><br />Supplies a binary value that indicates if the file contains a header row (<code>1</code>) or not (<code>0</code>).
           <pre>&lt;#> :header_rows 0 .</pre>
       </li>
       <li>
-        <b>Expected header</b><br>When <code>:header_rows</code> is set to 1, you can supply the header row you expect in the document.
+        <b>Expected header</b><br />When <code>:header_rows</code> is set to 1, you can supply the header row you expect in the document.
           <pre>&lt;#> :expected_header ( "\"id\",\"code\",\"local_code\",\"name\",\"continent\" ).</pre>
       </li>
       <li>
-        <b>Resource</b><br>With resource, you declare the resources that the mapping process will output. The resources that are Each mapping for each resource that is defined here,
+        <b>Resource</b><br />With resource, you declare the resources that the mapping process will output. The resources that are Each mapping for each resource that is defined here,
           <pre>&lt;#> :resource <#customer>, <#email>, <#phone>, <#affiliation>, <#sales_person> .</pre>
       </li>
       <li>
-        <b>Base URI</b><br>The base URI define the namespace where the created resources will be based under.
+        <b>Base URI</b><br />The base URI define the namespace where the created resources will be based under.
           <pre>&lt;#> :base_uri "&lt;http://my.data.source/test>" ;</pre>
       </li>
     </ul>
@@ -263,9 +263,9 @@ You can also use the current subject as object, in order to create inverse relat
   ].</pre>
     
     <h2>Processing column values</h2>
-    Column values can be processed before using them. This is done by calling a process function, which is specified by adding the predicate <code>:process</code>. Its object is an ordered list of defined functions which will be executed sequentially. We discuss some of them in detail.
+    <p>Column values can be processed before using them. This is done by calling a process function, which is specified by adding the predicate <code>:process</code>. Its object is an ordered list of defined functions which will be executed sequentially. We discuss some of them in detail.</p>
     <h3>Using conversions</h3>
-    Conversions transform a value into another value and are specified as custom PHP functions. These function are specified in the class <code>Conversions</code> located at <i>custom/conversions.class.php</i>. 
+    <p>Conversions transform a value into another value and are specified as custom PHP functions. These function are specified in the class <code>Conversions</code> located at <i>custom/conversions.class.php</i>. </p>
     <pre>
 &lt;?php
 /*
