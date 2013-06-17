@@ -25,3 +25,5 @@ Examples/panini_stickers/upload/*
 Examples/panini_stickers/output_data/*
 
 Examples/adventureWorks/output_data/adventureworks.rdf.ttl
+
+.DS_Store
